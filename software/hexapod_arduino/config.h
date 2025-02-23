@@ -35,14 +35,15 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define SERVOMIN 125  // Minimum value, 0 deg
-#define SERVOMID 350  // Middle value, 90 deg
-#define SERVOMAX 575  // Maximum value, 180 deg
+#define SERVOMIN 125 // Minimum value, 0 deg
+#define SERVOMID 350 // Middle value, 90 deg
+#define SERVOMAX 575 // Maximum value, 180 deg
 
-#define DELAY_MS 12  // Servo delay
+#define DELAY_MS 12 // Servo delay
 
 /** Motion Mode */
-enum MotionMode {
+enum MotionMode
+{
   Mode_Standby,
   Mode_Walk_0,
   Mode_Walk_180,
@@ -68,21 +69,19 @@ enum MotionMode {
 // {{leg1_join1, leg1_join2, leg1_join3},
 //  {leg2_join1, leg2_join2, leg2_join3},
 //  {leg3_join1, leg3_join2, leg3_join3}}
-static int left_legs[3][3] = {{0, 2, 1}, {7, 5, 10}, {15, 12, 14}};
-static int right_legs[3][3] = {{15, 12, 14}, {8, 9, 5}, {0, 2, 1}};
+static int left_legs[3][3] = {{0, 1, 2}, {4, 5, 6}, {8, 9, 10}};
+static int right_legs[3][3] = {{15, 14, 13}, {11, 10, 9}, {7, 6, 5}};
 
 // Offset to correct the installation error. Offset value is the number of ticks
-static int left_offset_ticks[3][3] = {
-    {-5, 10, 0}, {-15, 0, -20}, {20, -10, 10}};
-static int right_offset_ticks[3][3] = {
-    {20, -10, 0}, {-15, -5, -20}, {-10, 10, -20}};
+static int left_offset_ticks[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+static int right_offset_ticks[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 
-/** WiFi Configurations */
-#ifndef APSSID
-#define APSSID "hexapod"
-#define APPSK "hexapod_1234"
-#endif
+/** PS2 Configurations */
+#define PS2_DAT 26
+#define PS2_CMD 27
+#define PS2_SEL 12
+#define PS2_CLK 14
+#define pressures false
+#define rumble false
 
-#define UDP_PORT 1234  // local port to listen on
-
-#endif  // CONFIG_H
+#endif // CONFIG_H

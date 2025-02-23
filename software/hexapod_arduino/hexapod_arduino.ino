@@ -1,40 +1,4 @@
-/**
-
-  Hexapod -- A 3D Printed Hexapod Robot
-
-  - Copyright (C) 2024 - PRESENT  rookidroid.com
-  - E-mail: info@rookidroid.com
-  - Website: https://rookidroid.com/
-
-                        **
-                       ****
-                        **
-                        **
-                        **
-                        **
-
-        **********************************
-      **************************************
-     ****************************************
-     ********      ************      ********
-     *******        **********        *******
-     *******        **********        *******
-     ********      ************      ********
-     ****************************************
-     ****************************************
-     ****************************************
-     ****************************************
-
-
-            **************************
-
-                ******************
-
-*/
-
-/** WiFi */
-#include <AsyncUDP.h>
-#include <WiFi.h>
+#include <PS2X_lib.h>
 
 /** PWM */
 #include <Adafruit_PWMServoDriver.h>
@@ -42,12 +6,8 @@
 /** I2C */
 #include <Wire.h>
 
-/** OTA */
-#include <ArduinoOTA.h>
-
 /** Robot Configuration */
 #include "config.h"
-
 /** Motion Path LUT */
 #include "motion.h"
 
@@ -57,11 +17,7 @@ Adafruit_PWMServoDriver right_pwm = Adafruit_PWMServoDriver(0x41);
 MotionMode current_motion = MotionMode::Mode_Standby;
 MotionMode next_motion = MotionMode::Mode_Standby;
 
-const char *ssid = APSSID;
-const char *password = APPSK;
-AsyncUDP udp_socket;
-
-bool ota_mode = true;
+PS2X ps2x;
 
 /**
    @brief Sets up the hexapod robot system.
@@ -73,48 +29,8 @@ bool ota_mode = true;
 void setup() {
   Serial.begin(115200);
 
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(ssid, password);
-
-  IPAddress myIP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(myIP);
-
-  ArduinoOTA
-  .onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH) {
-      type = "sketch";
-    } else {  // U_SPIFFS
-      type = "filesystem";
-    }
-
-    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS
-    // using SPIFFS.end()
-    Serial.println("Start updating " + type);
-  })
-  .onEnd([]() {
-    Serial.println("\nEnd");
-  })
-  .onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  })
-  .onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) {
-      Serial.println("Auth Failed");
-    } else if (error == OTA_BEGIN_ERROR) {
-      Serial.println("Begin Failed");
-    } else if (error == OTA_CONNECT_ERROR) {
-      Serial.println("Connect Failed");
-    } else if (error == OTA_RECEIVE_ERROR) {
-      Serial.println("Receive Failed");
-    } else if (error == OTA_END_ERROR) {
-      Serial.println("End Failed");
-    }
-  });
-
-  ArduinoOTA.begin();
+  while (ps2x.config_gamepad(PS2_CLK, PS2_CMD, PS2_SEL, PS2_DAT, pressures, rumble) != 0)
+    ;
 
   // Initialize the PCA9685 library
   left_pwm.begin();
@@ -122,87 +38,6 @@ void setup() {
 
   right_pwm.begin();
   right_pwm.setPWMFreq(60);  // Set the PWM frequency of the PCA9685
-
-  if (udp_socket.listen(UDP_PORT)) {
-    Serial.print("UDP Listening on IP: ");
-    Serial.println(myIP);
-    udp_socket.onPacket([](AsyncUDPPacket packet) {
-      Serial.print("UDP Packet Type: ");
-      Serial.print(packet.isBroadcast()   ? "Broadcast"
-                   : packet.isMulticast() ? "Multicast"
-                   : "Unicast");
-      Serial.print(", From: ");
-      Serial.print(packet.remoteIP());
-      Serial.print(":");
-      Serial.print(packet.remotePort());
-      Serial.print(", To: ");
-      Serial.print(packet.localIP());
-      Serial.print(":");
-      Serial.print(packet.localPort());
-      Serial.print(", Length: ");
-      Serial.print(packet.length());
-      Serial.print(", Data: ");
-      Serial.write(packet.data(), packet.length());
-      Serial.println();
-      // reply to the client
-      packet.printf("Got %u bytes of data", packet.length());
-      char *packet_ptr = (char *)packet.data();
-      String inputString = "";
-      for (int str_idx = 0; str_idx < packet.length(); str_idx++) {
-        char inChar = packet_ptr[str_idx];
-
-        if (inChar != '\n' && inChar != ':') {
-          // add it to the inputString:
-          inputString += inChar;
-        } else if (inChar == ':') {
-          MotionMode current_mode = next_motion;
-          if (inputString == String("standby")) {
-            next_motion = MotionMode::Mode_Standby;
-          } else if (inputString == String("walk0")) {
-            next_motion = MotionMode::Mode_Walk_0;
-          } else if (inputString == String("walk180")) {
-            next_motion = MotionMode::Mode_Walk_180;
-          } else if (inputString == String("walkr45")) {
-            next_motion = MotionMode::Mode_Walk_R45;
-          } else if (inputString == String("walkr90")) {
-            next_motion = MotionMode::Mode_Walk_R90;
-          } else if (inputString == String("walkr135")) {
-            next_motion = MotionMode::Mode_Walk_R135;
-          } else if (inputString == String("walkl45")) {
-            next_motion = MotionMode::Mode_Walk_L45;
-          } else if (inputString == String("walkl90")) {
-            next_motion = MotionMode::Mode_Walk_L90;
-          } else if (inputString == String("walkl135")) {
-            next_motion = MotionMode::Mode_Walk_L135;
-          } else if (inputString == String("fastforward")) {
-            next_motion = MotionMode::Mode_Fast_Forward;
-          } else if (inputString == String("fastbackward")) {
-            next_motion = MotionMode::Mode_Fast_Backward;
-          } else if (inputString == String("turnleft")) {
-            next_motion = MotionMode::Mode_Turn_Left;
-          } else if (inputString == String("turnright")) {
-            next_motion = MotionMode::Mode_Turn_Right;
-          } else if (inputString == String("climbforward")) {
-            next_motion = MotionMode::Mode_Climb_Forward;
-          } else if (inputString == String("climbbackward")) {
-            next_motion = MotionMode::Mode_Climb_Backward;
-          } else if (inputString == String("rotatex")) {
-            next_motion = MotionMode::Mode_Rotate_X;
-          } else if (inputString == String("rotatey")) {
-            next_motion = MotionMode::Mode_Rotate_Y;
-          } else if (inputString == String("rotatez")) {
-            next_motion = MotionMode::Mode_Rotate_Z;
-          } else if (inputString == String("twist")) {
-            next_motion = MotionMode::Mode_Twist;
-          }
-
-          inputString = "";
-          ota_mode = false;
-        }
-      }
-    });
-  }
-
 
 
   boot_up_motion(lut_standup_length, lut_standup);
@@ -219,6 +54,9 @@ void setup() {
    `ArduinoOTA.handle()`.
 */
 void loop() {
+  ps2x.read_gamepad(false, 0);
+  handlePS2Controls();
+
   if (next_motion == MotionMode::Mode_Walk_0) {
     exec_motion(lut_walk_0_length, lut_walk_0);
   } else if (next_motion == MotionMode::Mode_Walk_180) {
@@ -259,10 +97,43 @@ void loop() {
     exec_motion(lut_standby_length, lut_standby);
   }
 
-  if (ota_mode) {
-    ArduinoOTA.handle();
-  }
+  delay(10);  // PS2 add new
 }
+
+void handlePS2Controls() {
+
+  if (ps2x.Button(PSB_L3)) next_motion = Mode_Standby;
+  if (ps2x.Button(PSB_R3)) next_motion = Mode_Twist;
+  if (ps2x.Button(PSB_TRIANGLE)) next_motion = Mode_Rotate_X;
+  if (ps2x.Button(PSB_CIRCLE)) next_motion = Mode_Rotate_Y;
+  if (ps2x.Button(PSB_SQUARE)) next_motion = Mode_Rotate_Z;
+
+  int LY = ps2x.Analog(PSS_LY);
+  int LX = ps2x.Analog(PSS_LX);
+  int RY = ps2x.Analog(PSS_RY);
+  int RX = ps2x.Analog(PSS_RX);
+
+  // 组合控制
+  if (LY < 100 && RY < 100) next_motion = Mode_Fast_Forward;
+  if (LY > 150 && RY > 150) next_motion = Mode_Fast_Backward;
+
+  // 左摇杆8方向
+  if (LY < 100 && LX < 100) next_motion = Mode_Walk_L135;
+  else if (LY < 100 && LX > 150) next_motion = Mode_Walk_R135;
+  else if (LY > 150 && LX < 100) next_motion = Mode_Walk_L45;
+  else if (LY > 150 && LX > 150) next_motion = Mode_Walk_R45;
+  else if (LY < 100) next_motion = Mode_Walk_180;
+  else if (LY > 150) next_motion = Mode_Walk_0;
+  else if (LX < 100) next_motion = Mode_Walk_L90;
+  else if (LX > 150) next_motion = Mode_Walk_R90;
+
+  // 右摇杆
+  if (RY < 100) next_motion = Mode_Climb_Forward;
+  else if (RY > 150) next_motion = Mode_Climb_Backward;
+  else if (RX < 100) next_motion = Mode_Turn_Left;
+  else if (RX > 150) next_motion = Mode_Turn_Right;
+}
+
 
 /**
    @brief Calibrates the posture of the hexapod robot.
@@ -287,12 +158,10 @@ void boot_up_motion(int lut_size, int lut[][6][3]) {
   for (int leg_idx = 0; leg_idx < 3; leg_idx++) {
     for (int joint_idx = 0; joint_idx < 3; joint_idx++) {
       right_pwm.setPWM(right_legs[leg_idx][joint_idx], 0,
-                       lut[0][leg_idx][joint_idx] +
-                       right_offset_ticks[leg_idx][joint_idx]);
+                       lut[0][leg_idx][joint_idx] + right_offset_ticks[leg_idx][joint_idx]);
       delay(50);
       left_pwm.setPWM(left_legs[leg_idx][joint_idx], 0,
-                      lut[0][leg_idx + 3][joint_idx] +
-                      left_offset_ticks[leg_idx][joint_idx]);
+                      lut[0][leg_idx + 3][joint_idx] + left_offset_ticks[leg_idx][joint_idx]);
       delay(50);
     }
   }
@@ -301,11 +170,9 @@ void boot_up_motion(int lut_size, int lut[][6][3]) {
     for (int leg_idx = 0; leg_idx < 3; leg_idx++) {
       for (int joint_idx = 0; joint_idx < 3; joint_idx++) {
         right_pwm.setPWM(right_legs[leg_idx][joint_idx], 0,
-                         lut[lut_idx][leg_idx][joint_idx] +
-                         right_offset_ticks[leg_idx][joint_idx]);
+                         lut[lut_idx][leg_idx][joint_idx] + right_offset_ticks[leg_idx][joint_idx]);
         left_pwm.setPWM(left_legs[leg_idx][joint_idx], 0,
-                        lut[lut_idx][leg_idx + 3][joint_idx] +
-                        left_offset_ticks[leg_idx][joint_idx]);
+                        lut[lut_idx][leg_idx + 3][joint_idx] + left_offset_ticks[leg_idx][joint_idx]);
       }
     }
     delay(DELAY_MS);
@@ -334,11 +201,9 @@ void exec_motion(int lut_size, int lut[][6][3]) {
     for (int leg_idx = 0; leg_idx < 3; leg_idx++) {
       for (int joint_idx = 0; joint_idx < 3; joint_idx++) {
         right_pwm.setPWM(right_legs[leg_idx][joint_idx], 0,
-                         lut[lut_idx][leg_idx][joint_idx] +
-                         right_offset_ticks[leg_idx][joint_idx]);
+                         lut[lut_idx][leg_idx][joint_idx] + right_offset_ticks[leg_idx][joint_idx]);
         left_pwm.setPWM(left_legs[leg_idx][joint_idx], 0,
-                        lut[lut_idx][leg_idx + 3][joint_idx] +
-                        left_offset_ticks[leg_idx][joint_idx]);
+                        lut[lut_idx][leg_idx + 3][joint_idx] + left_offset_ticks[leg_idx][joint_idx]);
       }
     }
 
@@ -379,8 +244,7 @@ void exec_transition(int start_pos[][6][3], int start_pos_idx,
 
   for (int leg_idx = 0; leg_idx < 6; leg_idx++) {
     for (int joint_idx = 0; joint_idx < 3; joint_idx++) {
-      diff = end_pos[end_pos_idx][leg_idx][joint_idx] -
-             start_pos[start_pos_idx][leg_idx][joint_idx];
+      diff = end_pos[end_pos_idx][leg_idx][joint_idx] - start_pos[start_pos_idx][leg_idx][joint_idx];
       current_pos[leg_idx][joint_idx] =
         start_pos[start_pos_idx][leg_idx][joint_idx];
       if (diff < 0) {
@@ -395,31 +259,25 @@ void exec_transition(int start_pos[][6][3], int start_pos_idx,
   for (int step_idx = 0; step_idx < max_step; step_idx++) {
     for (int leg_idx = 0; leg_idx < 3; leg_idx++) {
       for (int joint_idx = 0; joint_idx < 3; joint_idx++) {
-        if (abs(current_pos[leg_idx][joint_idx] -
-                end_pos[end_pos_idx][leg_idx][joint_idx]) > tick_step) {
-          current_pos[leg_idx][joint_idx] = current_pos[leg_idx][joint_idx] +
-                                            signed_ticks[leg_idx][joint_idx];
+        if (abs(current_pos[leg_idx][joint_idx] - end_pos[end_pos_idx][leg_idx][joint_idx]) > tick_step) {
+          current_pos[leg_idx][joint_idx] = current_pos[leg_idx][joint_idx] + signed_ticks[leg_idx][joint_idx];
         } else {
           current_pos[leg_idx][joint_idx] =
             end_pos[end_pos_idx][leg_idx][joint_idx];
         }
 
-        if (abs(current_pos[leg_idx + 3][joint_idx] -
-                end_pos[end_pos_idx][leg_idx + 3][joint_idx]) > tick_step) {
+        if (abs(current_pos[leg_idx + 3][joint_idx] - end_pos[end_pos_idx][leg_idx + 3][joint_idx]) > tick_step) {
           current_pos[leg_idx + 3][joint_idx] =
-            current_pos[leg_idx + 3][joint_idx] +
-            signed_ticks[leg_idx + 3][joint_idx];
+            current_pos[leg_idx + 3][joint_idx] + signed_ticks[leg_idx + 3][joint_idx];
         } else {
           current_pos[leg_idx + 3][joint_idx] =
             end_pos[end_pos_idx][leg_idx + 3][joint_idx];
         }
 
         right_pwm.setPWM(right_legs[leg_idx][joint_idx], 0,
-                         current_pos[leg_idx][joint_idx] +
-                         right_offset_ticks[leg_idx][joint_idx]);
+                         current_pos[leg_idx][joint_idx] + right_offset_ticks[leg_idx][joint_idx]);
         left_pwm.setPWM(left_legs[leg_idx][joint_idx], 0,
-                        current_pos[leg_idx + 3][joint_idx] +
-                        left_offset_ticks[leg_idx][joint_idx]);
+                        current_pos[leg_idx + 3][joint_idx] + left_offset_ticks[leg_idx][joint_idx]);
       }
     }
   }
