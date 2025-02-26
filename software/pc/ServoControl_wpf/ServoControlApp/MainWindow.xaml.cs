@@ -29,10 +29,10 @@ namespace ServoControlApp
 
         private void InitializeServos()
         {
-            for (var i = 0; i < 9; i++)
+            for (var i = 0; i < 16; i++)
             {
-                LeftServos.Add(new Servo { Order = i, Value = 350 });
-                RightServos.Add(new Servo { Order = i, Value = 350 });
+                LeftServos.Add(new Servo { Order = i, Value = 350,Value2 = 0});
+                RightServos.Add(new Servo { Order = i, Value = 350 ,Value2 = 0});
                 //LogEntries.Add(new LogEntry { Timestamp = DateTime.Now, Message = $"Servo {i} initialized" });
             }
         }
@@ -83,6 +83,7 @@ namespace ServoControlApp
     {
         public int Order { get; set; }
         public int Value { get; set; }
+        public int Value2 { get; set; }
     }
     
     public class LogEntry

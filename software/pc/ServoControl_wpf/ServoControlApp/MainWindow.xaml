@@ -29,7 +29,7 @@
                 <ItemsControl Grid.Column="0" ItemsSource="{Binding LeftServos}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <UniformGrid Rows="3" Columns="3"/>
+                            <UniformGrid Rows="4" Columns="4"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
@@ -46,7 +46,7 @@
                 <ItemsControl Grid.Column="1" ItemsSource="{Binding RightServos}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <UniformGrid Rows="3" Columns="3"/>
+                            <UniformGrid Rows="4" Columns="4"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
