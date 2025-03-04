@@ -77,10 +77,10 @@ static int left_offset_ticks[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 static int right_offset_ticks[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 
 /** PS2 Configurations */
-#define PS2_DAT 26
-#define PS2_CMD 27
-#define PS2_SEL 12
-#define PS2_CLK 14
+#define PS2_DAT 19
+#define PS2_CMD 23
+#define PS2_SEL 5
+#define PS2_CLK 18
 #define pressures false
 #define rumble false
 
