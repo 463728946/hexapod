@@ -24,7 +24,7 @@ namespace ServoControlApp
 
         public static readonly DependencyProperty ValueProperty =
             DependencyProperty.Register("Value", typeof(int), typeof(ServoControl));
-        
+
         public static readonly DependencyProperty Value2Property =
             DependencyProperty.Register("Value2", typeof(int), typeof(ServoControl));
 
@@ -54,7 +54,7 @@ namespace ServoControlApp
         private void SendDataToServer()
         {
             var mainWindow = (MainWindow)Application.Current.MainWindow;
-            mainWindow.SendData($"{Side},{Order},{Value + Value2}");
+            mainWindow.SendData($"{Side},{Order},{Value}{Value2}");
         }
 
         private void UIElement_OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)

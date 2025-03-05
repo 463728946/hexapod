@@ -52,6 +52,7 @@ PS2Handler::begin(int clk, int cmd, int sel, int dat)
 
 inline MotionMode PS2Handler::convertMotionCommand()
 {
+    ps2x.read_gamepad();
     if (ps2x.Button(PSB_L3))
         return Mode_Standby;
     if (ps2x.Button(PSB_R3))
