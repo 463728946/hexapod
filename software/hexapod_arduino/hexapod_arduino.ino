@@ -5,10 +5,10 @@
 #include "WiFi.h"
 #include "AsyncUDP.h"
 
-#define PS2_DAT 19
-#define PS2_CMD 23
-#define PS2_SEL 5
-#define PS2_CLK 18
+#define PS2_DAT 5
+#define PS2_CMD 6
+#define PS2_SEL 7
+#define PS2_CLK 4
 
 MotionController motionController;
 PS2Handler ps2;
